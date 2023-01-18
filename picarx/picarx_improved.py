@@ -1,5 +1,4 @@
 import atexit
-import os
 import time
 from typing import Any
 
@@ -16,14 +15,6 @@ except (ImportError, ModuleNotFoundError):
     )
     from sim_robot_hat import PWM, Grayscale_Module, Pin, Servo, Ultrasonic, fileDB
 
-# user and User home directory
-# Disable security checks here - written by the picar folks :(
-User = os.popen("echo ${SUDO_USER:-$LOGNAME}").readline().strip()  # nosec
-UserHome = (
-    os.popen("getent passwd %s | cut -d: -f 6" % User).readline().strip()  # nosec
-)
-config_file = f"{UserHome}/.config/picar-x/picar-x.conf"
-
 
 class Picarx:
     """Interface used to control the PiCar-X robot."""
@@ -34,15 +25,20 @@ class Picarx:
 
     def __init__(
         self,
+        config: str,
+        user: str,
         servo_pins: list[str] = ["P0", "P1", "P2"],
         motor_pins: list[str] = ["D4", "D5", "P12", "P13"],
         grayscale_pins: list[str] = ["A0", "A1", "A2"],
         ultrasonic_pins: list[str] = ["D2", "D3"],
-        config: str = config_file,
     ):
         """
         Create a new Picarx object.
 
+        :param config: path of config file
+        :type config: str, optional
+        :param user: owner of the configuration file
+        :type user: str
         :param servo_pins: direction_servo, camera_servo_1, camera_servo_2, defaults to
             ["P0", "P1", "P2"]
         :type servo_pins: list[str], optional
@@ -53,11 +49,9 @@ class Picarx:
         :type grayscale_pins: list[str], optional
         :param ultrasonic_pins: tring, echo, defaults to ["D2", "D3"]
         :type ultrasonic_pins: list[str], optional
-        :param config: path of config file, defaults to config_file
-        :type config: str, optional
         """
         # Initialize the configuration file
-        self.config_file = fileDB(config, 774, User)
+        self.config_file = fileDB(config, 774, user)
 
         # Configure interfaces for the car servos
         self.pan_servo = Servo(PWM(servo_pins[0]))
@@ -81,13 +75,16 @@ class Picarx:
         self.tilt_servo.angle(self.tilt_servo_trim)
 
         # Initialize the motors
-        self.left_rear_dir_pin = Pin(motor_pins[0])
-        self.right_rear_dir_pin = Pin(motor_pins[1])
-        self.left_rear_pwm_pin = PWM(motor_pins[2])
-        self.right_rear_pwm_pin = PWM(motor_pins[3])
+        self.left_motor_direction_pin = Pin(motor_pins[0])
+        self.right_motor_direction_pin = Pin(motor_pins[1])
+        self.left_motor_pwm_pin = PWM(motor_pins[2])
+        self.right_motor_pwm_pin = PWM(motor_pins[3])
 
-        self.motor_direction_pins = [self.left_rear_dir_pin, self.right_rear_dir_pin]
-        self.motor_speed_pins = [self.left_rear_pwm_pin, self.right_rear_pwm_pin]
+        self.motor_direction_pins = (
+            self.left_motor_direction_pin,
+            self.right_motor_direction_pin,
+        )
+        self.motor_speed_pins = (self.left_motor_pwm_pin, self.right_motor_pwm_pin)
 
         # Get the default motor directions
         self.default_motor_direction = self.config_file.get(
@@ -112,9 +109,9 @@ class Picarx:
         self.ultrasonic = Ultrasonic(Pin(tring), Pin(echo))
 
         # Register the shutdown method
-        atexit.register(self.shutdown)
+        atexit.register(self.cleanup)
 
-    def shutdown(self) -> None:
+    def cleanup(self) -> None:
         """Shutdown the car on exit."""
         # Shut the motors off
         self.stop()
@@ -285,6 +282,25 @@ class Picarx:
         else:
             self.set_motor_speed(1, speed)
             self.set_motor_speed(2, -1 * speed)
+
+    def drive(self, speed: float, angle: int) -> None:
+        """
+        Drive the robot in a desired speed and direction.
+
+        If the speed is positive, then the robot will drive forward, otherwise the
+        the robot will attempt to drive backwards.
+
+        :param speed: desired speed
+        :type speed: float
+        :param angle: desired angle
+        :type angle: int
+        """
+        self.turn_angle = angle
+
+        if speed > 0:
+            self.forward(speed)
+        else:
+            self.backward(-speed)
 
     def stop(self) -> None:
         """Stop the motors."""
