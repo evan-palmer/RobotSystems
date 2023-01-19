@@ -218,10 +218,6 @@ class Picarx:
         """
         self.set_turn_angle(angle)
 
-        # Reverse the speed if we are trying to go backwards
-        if speed > 0:
-            speed *= -1
-
         if angle != 0:
             abs_angle = abs(angle)
 
@@ -232,25 +228,21 @@ class Picarx:
 
             if speed > 0:
                 if (angle / abs_angle) > 0:
-                    self.left_motor.set_speed(1 * speed * power_scale)
+                    self.left_motor.set_speed(speed * power_scale)
                     self.right_motor.set_speed(-speed)
                 else:
                     self.left_motor.set_speed(speed)
-                    self.right_motor.set_speed(-1 * speed * power_scale)
+                    self.right_motor.set_speed(-speed * power_scale)
             else:
                 if (angle / abs_angle) > 0:
-                    self.left_motor.set_speed(-1 * speed)
-                    self.right_motor.set_speed(speed * power_scale)
+                    self.left_motor.set_speed(speed)
+                    self.right_motor.set_speed(-speed * power_scale)
                 else:
-                    self.left_motor.set_speed(-1 * speed * power_scale)
-                    self.right_motor.set_speed(speed)
+                    self.left_motor.set_speed(speed * power_scale)
+                    self.right_motor.set_speed(-speed)
         else:
-            if speed > 0:
-                self.left_motor.set_speed(speed)
-                self.right_motor.set_speed(-1 * speed)
-            else:
-                self.left_motor.set_speed(-1 * speed)
-                self.right_motor.set_speed(speed)
+            self.left_motor.set_speed(speed)
+            self.right_motor.set_speed(-speed)
 
     def stop(self) -> None:
         """Stop the motors."""
