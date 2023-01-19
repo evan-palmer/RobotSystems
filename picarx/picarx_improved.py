@@ -295,7 +295,7 @@ class Picarx:
         :param angle: desired angle
         :type angle: float
         """
-        self.turn_angle = angle
+        self.set_turn_angle(angle)
 
         if speed > 0:
             self.forward(speed)

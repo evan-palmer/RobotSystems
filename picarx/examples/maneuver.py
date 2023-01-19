@@ -25,7 +25,7 @@ def parallel_parking(car: Picarx, direction: str, speed: float = 50) -> None:
     # Ensure that the speed is positive so that we drive in the correct direction
     speed = abs(speed)
 
-    angle = -180 if direction == "Right" else 180
+    angle = -30 if direction == "Right" else 30
 
     # Drive forward
     car.forward(speed)
@@ -42,10 +42,12 @@ def parallel_parking(car: Picarx, direction: str, speed: float = 50) -> None:
     car.stop()
 
     # Realign
+    car.set_turn_angle(0)
     car.forward(speed)
-    time.sleep(1)
+    time.sleep(0.5)
     car.stop()
 
+    car.set_turn_angle(0)
 
 def k_turn(car: Picarx, init_direction: str, speed: float = 50) -> None:
     """
@@ -69,7 +71,7 @@ def k_turn(car: Picarx, init_direction: str, speed: float = 50) -> None:
     # Ensure that the speed is positive so that we drive in the correct direction
     speed = abs(speed)
 
-    angle = 90 if init_direction == "Right" else -90
+    angle = 30 if init_direction == "Right" else -30
 
     # Drive to curb
     car.drive(speed, angle)
@@ -78,12 +80,14 @@ def k_turn(car: Picarx, init_direction: str, speed: float = 50) -> None:
 
     # Backup
     car.drive(-speed, -angle / 2)
-    time.sleep(0.5)
+    time.sleep(1)
     car.stop()
 
     # Turn to the opposite direction that we were initially facing
-    car.drive(speed, -angle / 2)
-    time.sleep(1)
+    car.drive(speed, angle)
+    time.sleep(2)
+
+    car.set_turn_angle(0)
 
 
 if __name__ == "__main__":
@@ -94,4 +98,5 @@ if __name__ == "__main__":
 
     car = Picarx(config, user)
 
-    parallel_parking(car, "Right")
+    # parallel_parking(car, "Left")
+    k_turn(car, "Right")
