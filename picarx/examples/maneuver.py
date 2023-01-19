@@ -25,7 +25,7 @@ def parallel_parking(car: Picarx, direction: str, speed: float = 50) -> None:
     # Ensure that the speed is positive so that we drive in the correct direction
     speed = abs(speed)
 
-    angle = -30 if direction == "Right" else 30
+    angle = 30 if direction == "Right" else -30
 
     # Drive forward
     car.drive(speed, 0)
@@ -118,11 +118,10 @@ if __name__ == "__main__":
             else:
                 direction = "Left" if direction == "l" else "Right"
 
-            match manuever:
-                case "p":
-                    parallel_parking(car, direction)
-                case "k":
-                    k_turn(car, direction)
+            if manuever == "p":
+                parallel_parking(car, direction)
+            else:
+                k_turn(car, direction)
 
         else:
             break
