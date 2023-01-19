@@ -205,59 +205,6 @@ class Picarx:
         self.left_motor.set_speed(speed)
         self.right_motor.set_speed(speed)
 
-    def _backward(self, speed: float) -> None:
-        """
-        Drive backward.
-
-        :param speed: desired speed to drive backwards at.
-        :type speed: float
-        """
-        current_angle = self.turn_angle
-
-        if current_angle != 0:
-            abs_current_angle = abs(current_angle)
-
-            if abs_current_angle > 40:
-                abs_current_angle = 40
-            power_scale = (100 - abs_current_angle) / 100.0
-
-            if (current_angle / abs_current_angle) > 0:
-                self.left_motor.set_speed(-1 * speed)
-                self.right_motor.set_speed(speed * power_scale)
-            else:
-                self.left_motor.set_speed(-1 * speed * power_scale)
-                self.right_motor.set_speed(speed)
-        else:
-            self.left_motor.set_speed(-1 * speed)
-            self.right_motor.set_speed(speed)
-
-    def _forward(self, speed: float) -> None:
-        """
-        Drive forward.
-
-        :param speed: desired speed to drive forward at.
-        :type speed: float
-        """
-        current_angle = self.turn_angle
-
-        if current_angle != 0:
-            abs_current_angle = abs(current_angle)
-
-            if abs_current_angle > 40:
-                abs_current_angle = 40
-
-            power_scale = (100 - abs_current_angle) / 100.0
-
-            if (current_angle / abs_current_angle) > 0:
-                self.left_motor.set_speed(1 * speed * power_scale)
-                self.right_motor.set_speed(-speed)
-            else:
-                self.left_motor.set_speed(speed)
-                self.right_motor.set_speed(-1 * speed * power_scale)
-        else:
-            self.left_motor.set_speed(speed)
-            self.right_motor.set_speed(-1 * speed)
-
     def drive(self, speed: float, angle: float) -> None:
         """
         Drive the robot in a desired speed and direction.
@@ -271,56 +218,39 @@ class Picarx:
         """
         self.set_turn_angle(angle)
 
+        # Reverse the speed if we are trying to go backwards
         if speed > 0:
-            self._forward(speed)
+            speed *= -1
+
+        if angle != 0:
+            abs_angle = abs(angle)
+
+            if abs_angle > 40:
+                abs_angle = 40
+
+            power_scale = (100 - abs_angle) / 100.0
+
+            if speed > 0:
+                if (angle / abs_angle) > 0:
+                    self.left_motor.set_speed(1 * speed * power_scale)
+                    self.right_motor.set_speed(-speed)
+                else:
+                    self.left_motor.set_speed(speed)
+                    self.right_motor.set_speed(-1 * speed * power_scale)
+            else:
+                if (angle / abs_angle) > 0:
+                    self.left_motor.set_speed(-1 * speed)
+                    self.right_motor.set_speed(speed * power_scale)
+                else:
+                    self.left_motor.set_speed(-1 * speed * power_scale)
+                    self.right_motor.set_speed(speed)
         else:
-            self._backward(-speed)
-
-    # def drive(self, speed: float, angle: float) -> None:
-    #     """
-    #     Drive the robot in a desired speed and direction.
-
-    #     If the speed is positive, then the robot will drive forward, otherwise the
-    #     the robot will attempt to drive backwards.
-
-    #     :param speed: desired speed
-    #     :type speed: float
-    #     :param angle: desired angle
-    #     :type angle: float
-    #     """
-    #     self.set_turn_angle(angle)
-
-    #     if angle != 0:
-    #         abs_angle = abs(angle)
-
-    #         if abs_angle > 40:
-    #             abs_angle = 40
-
-    #         power_scale = (100 - abs_angle) / 100.0
-
-    #         if speed > 0:
-    #             # Configure the motors for driving forward
-    #             if (angle / abs_angle) > 0:
-    #                 self.left_motor.set_speed(1 * speed * power_scale)
-    #                 self.right_motor.set_speed(-speed)
-    #             else:
-    #                 self.left_motor.set_speed(speed)
-    #                 self.right_motor.set_speed(-1 * speed * power_scale)
-    #         else:
-    #             # Configure the motors for driving backward
-    #             if (angle / abs_angle) > 0:
-    #                 self.left_motor.set_speed(-1 * speed)
-    #                 self.right_motor.set_speed(speed * power_scale)
-    #             else:
-    #                 self.left_motor.set_speed(-1 * speed * power_scale)
-    #                 self.right_motor.set_speed(speed)
-    #     else:
-    #         if speed > 0:
-    #             self.left_motor.set_speed(speed)
-    #             self.right_motor.set_speed(-1 * speed)
-    #         else:
-    #             self.left_motor.set_speed(-1 * speed)
-    #             self.right_motor.set_speed(speed)
+            if speed > 0:
+                self.left_motor.set_speed(speed)
+                self.right_motor.set_speed(-1 * speed)
+            else:
+                self.left_motor.set_speed(-1 * speed)
+                self.right_motor.set_speed(speed)
 
     def stop(self) -> None:
         """Stop the motors."""
