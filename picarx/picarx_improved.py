@@ -56,10 +56,10 @@ class Picarx:
         # Configure interfaces for the car servos
         self.pan_servo = Servo(PWM(servo_pins[0]))
         self.tilt_servo = Servo(PWM(servo_pins[1]))
-        self.turning_survo = Servo(PWM(servo_pins[2]))
+        self.steering_survo = Servo(PWM(servo_pins[2]))
 
         # Read the servo trim values
-        self.turning_survo_trim = int(
+        self.steering_survo_trim = int(
             self.config_file.get("picarx_dir_servo", default_value=0)
         )
         self.pan_servo_trim = int(
@@ -70,7 +70,7 @@ class Picarx:
         )
 
         # Set the trim angles
-        self.turning_survo.angle(self.turning_survo_trim)
+        self.steering_survo.angle(self.steering_survo_trim)
         self.pan_servo.angle(self.pan_servo_trim)
         self.tilt_servo.angle(self.tilt_servo_trim)
 
@@ -135,16 +135,16 @@ class Picarx:
 
         self.config_file.set("picarx_dir_motor", self.default_motor_direction)
 
-    def save_turning_servo_calibration(self, value: int) -> None:
+    def save_steering_servo_calibration(self, value: int) -> None:
         """
         Calibrate the angle of the direction servo.
 
         :param value: calibration value
         :type value: int
         """
-        self.turning_survo_trim = value
+        self.steering_survo_trim = value
         self.config_file.set("picarx_dir_servo", "%s" % value)
-        self.turning_survo.angle(value)
+        self.steering_survo.angle(value)
 
     def save_pan_servo_calibration(self, value: int) -> None:
         """
@@ -195,13 +195,13 @@ class Picarx:
 
     def set_turn_angle(self, value: int) -> None:
         """
-        Set the angle of the turning servo.
+        Set the angle of the steering servo.
 
         :param value: desired angle of the servo
         :type value: int
         """
         self.turn_angle = value
-        self.turning_survo.angle(value + self.turning_survo_trim)
+        self.steering_survo.angle(value + self.steering_survo_trim)
 
     def set_pan_angle(self, value: int) -> None:
         """
