@@ -213,6 +213,7 @@ class Picarx:
         :type speed: float
         """
         current_angle = self.turn_angle
+
         if current_angle != 0:
             abs_current_angle = abs(current_angle)
 
@@ -224,8 +225,8 @@ class Picarx:
                 self.left_motor.set_speed(-1 * speed)
                 self.right_motor.set_speed(speed * power_scale)
             else:
-                self.left_motor.set_speed(1, -1 * speed * power_scale)
-                self.right_motor.set_speed(2, speed)
+                self.left_motor.set_speed(-1 * speed * power_scale)
+                self.right_motor.set_speed(speed)
         else:
             self.left_motor.set_speed(-1 * speed)
             self.right_motor.set_speed(speed)
@@ -249,7 +250,7 @@ class Picarx:
 
             if (current_angle / abs_current_angle) > 0:
                 self.left_motor.set_speed(1 * speed * power_scale)
-                self.right_motor.set_speed(2, -speed)
+                self.right_motor.set_speed(-speed)
             else:
                 self.left_motor.set_speed(speed)
                 self.right_motor.set_speed(-1 * speed * power_scale)
@@ -270,10 +271,40 @@ class Picarx:
         """
         self.set_turn_angle(angle)
 
-        if speed > 0:
-            self._forward(speed)
+        if angle != 0:
+            abs_angle = abs(angle)
+
+            if abs_angle > 40:
+                abs_angle = 40
+
+            power_scale = (100 - abs_angle) / 100.0
+
+            if speed > 0:
+                if (angle / abs_angle) > 0:
+                    self.left_motor.set_speed(1 * speed * power_scale)
+                    self.right_motor.set_speed(-speed)
+                else:
+                    self.left_motor.set_speed(speed)
+                    self.right_motor.set_speed(-1 * speed * power_scale)
+            else:
+                if (angle / abs_angle) > 0:
+                    self.left_motor.set_speed(-1 * speed)
+                    self.right_motor.set_speed(speed * power_scale)
+                else:
+                    self.left_motor.set_speed(-1 * speed * power_scale)
+                    self.right_motor.set_speed(speed)
         else:
-            self._backward(-speed)
+            if speed > 0:
+                self.left_motor.set_speed(speed)
+                self.right_motor.set_speed(-1 * speed)
+            else:
+                self.left_motor.set_speed(-1 * speed)
+                self.right_motor.set_speed(speed)
+
+        # if speed > 0:
+        #     self._forward(speed)
+        # else:
+        #     self._backward(-speed)
 
     # def drive(self, speed: float, angle: float) -> None:
     #     """
