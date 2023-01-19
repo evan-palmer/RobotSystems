@@ -95,7 +95,7 @@ class Picarx:
         ]
 
         self.motor_speed_trims = [0, 0]
-        self.turn_angle = 0
+        self.turn_angle = 0.0
 
         for pin in self.motor_speed_pins:
             pin.period(self.PERIOD)
@@ -283,7 +283,7 @@ class Picarx:
             self.set_motor_speed(1, speed)
             self.set_motor_speed(2, -1 * speed)
 
-    def drive(self, speed: float, angle: int) -> None:
+    def drive(self, speed: float, angle: float) -> None:
         """
         Drive the robot in a desired speed and direction.
 
@@ -293,7 +293,7 @@ class Picarx:
         :param speed: desired speed
         :type speed: float
         :param angle: desired angle
-        :type angle: int
+        :type angle: float
         """
         self.turn_angle = angle
 
