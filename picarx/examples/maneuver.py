@@ -1,7 +1,10 @@
 import os
 import time
+import sys
 
-from picarx.picarx_improved import Picarx
+sys.path.append("..")
+
+from picarx_improved import Picarx
 
 
 def parallel_parking(car: Picarx, direction: str, speed: float = 50) -> None:
@@ -22,20 +25,25 @@ def parallel_parking(car: Picarx, direction: str, speed: float = 50) -> None:
     # Ensure that the speed is positive so that we drive in the correct direction
     speed = abs(speed)
 
-    angle = -30 if direction == "Right" else 30
+    angle = -180 if direction == "Right" else 180
 
     # Drive forward
     car.forward(speed)
-    time.sleep(2)
+    time.sleep(1)
     car.stop()
 
     # Drive backward at an angle
     car.drive(-speed, angle)
-    time.sleep(2)
+    time.sleep(1)
+    car.stop()
+
+    car.drive(-speed, -angle)
+    time.sleep(1)
     car.stop()
 
     # Realign
     car.forward(speed)
+    time.sleep(1)
     car.stop()
 
 

@@ -1,7 +1,10 @@
 import os
 import time
+import sys
 
-from picarx.picarx_improved import Picarx
+sys.path.append("..")
+
+from picarx_improved import Picarx
 
 
 def calibrate_steering(config: str, user: str) -> None:
