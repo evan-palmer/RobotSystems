@@ -115,6 +115,8 @@ if __name__ == "__main__":
             if direction not in ["l", "r"]:
                 print("Invalid direction provided. Options include 'l' and 'r'.")
                 continue
+            else:
+                direction = "Left" if direction == "l" else "Right"
 
             match manuever:
                 case "p":
