@@ -1,10 +1,10 @@
 import os
-import time
 import sys
+import time
 
 sys.path.append("..")
 
-from picarx_improved import Picarx
+from picarx_improved import Picarx  # noqa
 
 
 def parallel_parking(car: Picarx, direction: str, speed: float = 50) -> None:
@@ -28,7 +28,7 @@ def parallel_parking(car: Picarx, direction: str, speed: float = 50) -> None:
     angle = -30 if direction == "Right" else 30
 
     # Drive forward
-    car.forward(speed)
+    car.drive(speed, 0)
     time.sleep(1)
     car.stop()
 
@@ -42,12 +42,12 @@ def parallel_parking(car: Picarx, direction: str, speed: float = 50) -> None:
     car.stop()
 
     # Realign
-    car.set_turn_angle(0)
-    car.forward(speed)
+    car.drive(speed, 0)
     time.sleep(0.5)
     car.stop()
 
-    car.set_turn_angle(0)
+    car.reset()
+
 
 def k_turn(car: Picarx, init_direction: str, speed: float = 50) -> None:
     """
@@ -87,7 +87,7 @@ def k_turn(car: Picarx, init_direction: str, speed: float = 50) -> None:
     car.drive(speed, angle)
     time.sleep(2)
 
-    car.set_turn_angle(0)
+    car.reset()
 
 
 if __name__ == "__main__":
@@ -98,5 +98,31 @@ if __name__ == "__main__":
 
     car = Picarx(config, user)
 
-    # parallel_parking(car, "Left")
-    k_turn(car, "Right")
+    run = True
+
+    while run:
+        manuever = input(
+            "Press 'p' to perform a parallel parking maneuver, 'k' to perform a"
+            " 3-point turn maneuver, or any other key to exit: "
+        )
+
+        if manuever in ["p", "k"]:
+            direction = input(
+                "Press 'l' to turn left for the maneuver or press 'r' to turn right"
+                " for the maneuver: "
+            )
+
+            if direction not in ["l", "r"]:
+                print("Invalid direction provided. Options include 'l' and 'r'.")
+                continue
+
+            match manuever:
+                case "p":
+                    parallel_parking(car, direction)
+                case "k":
+                    k_turn(car, direction)
+
+        else:
+            break
+
+    car.reset()

@@ -1,10 +1,10 @@
 import os
-import time
 import sys
+import time
 
 sys.path.append("..")
 
-from picarx_improved import Picarx
+from picarx_improved import Picarx  # noqa
 
 
 def calibrate_steering(config: str, user: str) -> None:
@@ -17,8 +17,7 @@ def calibrate_steering(config: str, user: str) -> None:
     car = Picarx(config, user)
 
     # Drive forward
-    car.set_turn_angle(0)
-    car.forward(50)
+    car.drive(50, 0)
 
     # Wait four seconds while the car is driving
     time.sleep(4)

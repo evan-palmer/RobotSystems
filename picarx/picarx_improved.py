@@ -116,6 +116,16 @@ class Picarx:
         # Shut the motors off
         self.stop()
 
+    def reset(self) -> None:
+        """Reset the state of the car."""
+        # Stop the motors
+        self.stop()
+
+        # Reset the servos
+        self.set_pan_angle(0)
+        self.set_turn_angle(0)
+        self.set_tilt_angle(0)
+
     def save_motor_direction_calibration(self, motor: int, value: int) -> None:
         """
         Calibrate the motor direction.
@@ -193,7 +203,7 @@ class Picarx:
             self.motor_direction_pins[motor].low()
             self.motor_speed_pins[motor].pulse_width_percent(speed)
 
-    def set_turn_angle(self, value: int) -> None:
+    def set_turn_angle(self, value: float) -> None:
         """
         Set the angle of the steering servo.
 
@@ -231,7 +241,7 @@ class Picarx:
         self.set_motor_speed(1, speed)
         self.set_motor_speed(2, speed)
 
-    def backward(self, speed: float) -> None:
+    def _backward(self, speed: float) -> None:
         """
         Drive backward.
 
@@ -256,7 +266,7 @@ class Picarx:
             self.set_motor_speed(1, -1 * speed)
             self.set_motor_speed(2, speed)
 
-    def forward(self, speed: float) -> None:
+    def _forward(self, speed: float) -> None:
         """
         Drive forward.
 
@@ -298,9 +308,9 @@ class Picarx:
         self.set_turn_angle(angle)
 
         if speed > 0:
-            self.forward(speed)
+            self._forward(speed)
         else:
-            self.backward(-speed)
+            self._backward(-speed)
 
     def stop(self) -> None:
         """Stop the motors."""
