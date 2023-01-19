@@ -64,7 +64,9 @@ class Motor:
         elif speed < 0:
             direction = -1 * self.direction
 
-        speed = abs(speed) - self.trim
+        # If the speed is not set to zero then add the trim
+        if 0.001 < abs(speed):
+            speed = abs(speed) - self.trim
 
         if direction < 0:
             self.direction_pin.high()

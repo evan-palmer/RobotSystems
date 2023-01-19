@@ -80,17 +80,17 @@ class Picarx:
         ]
 
         # Initialize the motors
-        self.left_motor = Motor(
+        self.right_motor = Motor(
             Pin(motor_pins[0]),
             PWM(motor_pins[2]),
             default_direction=self.default_motor_direction[0],
             trim=0,
         )
-        self.right_motor = Motor(
+        self.left_motor = Motor(
             Pin(motor_pins[1]),
             PWM(motor_pins[3]),
             default_direction=self.default_motor_direction[1],
-            trim=0,
+            trim=10,
         )
 
         self.turn_angle = 0.0
@@ -126,12 +126,12 @@ class Picarx:
             raise ValueError("Invalid motor ID provided. Options are: 1, 2.")
 
         if motor == 1:
-            self.left_motor.direction = value
-        else:
             self.right_motor.direction = value
+        else:
+            self.left_motor.direction = value
 
         self.config_file.set(
-            "picarx_dir_motor", [self.left_motor.direction, self.right_motor.direction]
+            "picarx_dir_motor", [self.right_motor.direction, self.left_motor.direction]
         )
 
     def save_steering_servo_calibration(self, value: int) -> None:
@@ -202,8 +202,8 @@ class Picarx:
         :param speed: desired speed for the motors to drive at.
         :type speed: float
         """
-        self.left_motor.set_speed(speed)
         self.right_motor.set_speed(speed)
+        self.left_motor.set_speed(speed)
 
     def drive(self, speed: float, angle: float) -> None:
         """
@@ -228,21 +228,21 @@ class Picarx:
 
             if speed > 0:
                 if (angle / abs_angle) > 0:
-                    self.left_motor.set_speed(speed * power_scale)
-                    self.right_motor.set_speed(-speed)
+                    self.right_motor.set_speed(speed * power_scale)
+                    self.left_motor.set_speed(-speed)
                 else:
-                    self.left_motor.set_speed(speed)
-                    self.right_motor.set_speed(-speed * power_scale)
+                    self.right_motor.set_speed(speed)
+                    self.left_motor.set_speed(-speed * power_scale)
             else:
                 if (angle / abs_angle) > 0:
-                    self.left_motor.set_speed(speed)
-                    self.right_motor.set_speed(-speed * power_scale)
+                    self.right_motor.set_speed(speed)
+                    self.left_motor.set_speed(-speed * power_scale)
                 else:
-                    self.left_motor.set_speed(speed * power_scale)
-                    self.right_motor.set_speed(-speed)
+                    self.right_motor.set_speed(speed * power_scale)
+                    self.left_motor.set_speed(-speed)
         else:
-            self.left_motor.set_speed(speed)
-            self.right_motor.set_speed(-speed)
+            self.right_motor.set_speed(speed)
+            self.left_motor.set_speed(-speed)
 
     def stop(self) -> None:
         """Stop the motors."""
