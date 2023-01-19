@@ -1,4 +1,3 @@
-import atexit
 import time
 from typing import Any
 
@@ -15,13 +14,11 @@ except (ImportError, ModuleNotFoundError):
     )
     from sim_robot_hat import PWM, Grayscale_Module, Pin, Servo, Ultrasonic, fileDB
 
+from motor import Motor
+
 
 class Picarx:
     """Interface used to control the PiCar-X robot."""
-
-    PERIOD = 4095
-    PRESCALER = 10
-    TIMEOUT = 0.02
 
     def __init__(
         self,
@@ -74,18 +71,6 @@ class Picarx:
         self.pan_servo.angle(self.pan_servo_trim)
         self.tilt_servo.angle(self.tilt_servo_trim)
 
-        # Initialize the motors
-        self.left_motor_direction_pin = Pin(motor_pins[0])
-        self.right_motor_direction_pin = Pin(motor_pins[1])
-        self.left_motor_pwm_pin = PWM(motor_pins[2])
-        self.right_motor_pwm_pin = PWM(motor_pins[3])
-
-        self.motor_direction_pins = (
-            self.left_motor_direction_pin,
-            self.right_motor_direction_pin,
-        )
-        self.motor_speed_pins = (self.left_motor_pwm_pin, self.right_motor_pwm_pin)
-
         # Get the default motor directions
         self.default_motor_direction = self.config_file.get(
             "picarx_dir_motor", default_value="[1,1]"
@@ -94,12 +79,21 @@ class Picarx:
             int(i.strip()) for i in self.default_motor_direction.strip("[]").split(",")
         ]
 
-        self.motor_speed_trims = [0, 0]
-        self.turn_angle = 0.0
+        # Initialize the motors
+        self.left_motor = Motor(
+            Pin(motor_pins[0]),
+            PWM(motor_pins[2]),
+            default_direction=self.default_motor_direction[0],
+            trim=0,
+        )
+        self.right_motor = Motor(
+            Pin(motor_pins[1]),
+            PWM(motor_pins[3]),
+            default_direction=self.default_motor_direction[1],
+            trim=0,
+        )
 
-        for pin in self.motor_speed_pins:
-            pin.period(self.PERIOD)
-            pin.prescaler(self.PRESCALER)
+        self.turn_angle = 0.0
 
         # Initialize the camera
         self.grayscale = Grayscale_Module(*grayscale_pins, reference=1000)
@@ -107,14 +101,6 @@ class Picarx:
         # Initialize the ultrasonic sensor
         tring, echo = ultrasonic_pins
         self.ultrasonic = Ultrasonic(Pin(tring), Pin(echo))
-
-        # Register the shutdown method
-        atexit.register(self.cleanup)
-
-    def cleanup(self) -> None:
-        """Shutdown the car on exit."""
-        # Shut the motors off
-        self.stop()
 
     def reset(self) -> None:
         """Reset the state of the car."""
@@ -128,26 +114,29 @@ class Picarx:
 
     def save_motor_direction_calibration(self, motor: int, value: int) -> None:
         """
-        Calibrate the motor direction.
+        Save the calibrated motor direction.
 
-        :param motor: motor to calibrate
+        :param motor: motor whose calibration should be saved
         :type motor: int
         :param value: direction of the motor; 1 for positive direction, -1 for negative
             direction
         :type value: int
         """
-        motor -= 1
+        if motor not in [1, 2]:
+            raise ValueError("Invalid motor ID provided. Options are: 1, 2.")
 
-        if value == 1:
-            self.default_motor_direction[motor] = 1
-        elif value == -1:
-            self.default_motor_direction[motor] = -1
+        if motor == 1:
+            self.left_motor.direction = value
+        else:
+            self.right_motor.direction = value
 
-        self.config_file.set("picarx_dir_motor", self.default_motor_direction)
+        self.config_file.set(
+            "picarx_dir_motor", [self.left_motor.direction, self.right_motor.direction]
+        )
 
     def save_steering_servo_calibration(self, value: int) -> None:
         """
-        Calibrate the angle of the direction servo.
+        Save the steering servo calibration.
 
         :param value: calibration value
         :type value: int
@@ -158,9 +147,9 @@ class Picarx:
 
     def save_pan_servo_calibration(self, value: int) -> None:
         """
-        Calibrate the camera pan servo.
+        Save the camera panning servo calibration.
 
-        :param value: calibration value.
+        :param value: calibration value
         :type value: int
         """
         self.pan_servo_trim = value
@@ -169,7 +158,7 @@ class Picarx:
 
     def save_tilt_servo_calibration(self, value: int) -> None:
         """
-        Calibrate the camera tilt servo.
+        Svae the camera tilt servo calibration.
 
         :param value: calibration value
         :type value: int
@@ -177,31 +166,6 @@ class Picarx:
         self.tilt_servo_trim = value
         self.config_file.set("picarx_cam_servo2", "%s" % value)
         self.tilt_servo.angle(value)
-
-    def set_motor_speed(self, motor: int, speed: float) -> None:
-        """
-        Set the motor speed.
-
-        :param motor: motor whose speed should be set
-        :type motor: int
-        :param speed: target motor speed
-        :type speed: float
-        """
-        motor -= 1
-
-        if speed >= 0:
-            direction = 1 * self.default_motor_direction[motor]
-        elif speed < 0:
-            direction = -1 * self.default_motor_direction[motor]
-
-        speed = abs(speed) - self.motor_speed_trims[motor]
-
-        if direction < 0:
-            self.motor_direction_pins[motor].high()
-            self.motor_speed_pins[motor].pulse_width_percent(speed)
-        else:
-            self.motor_direction_pins[motor].low()
-            self.motor_speed_pins[motor].pulse_width_percent(speed)
 
     def set_turn_angle(self, value: float) -> None:
         """
@@ -238,60 +202,8 @@ class Picarx:
         :param speed: desired speed for the motors to drive at.
         :type speed: float
         """
-        self.set_motor_speed(1, speed)
-        self.set_motor_speed(2, speed)
-
-    def _backward(self, speed: float) -> None:
-        """
-        Drive backward.
-
-        :param speed: desired speed to drive backwards at.
-        :type speed: float
-        """
-        current_angle = self.turn_angle
-        if current_angle != 0:
-            abs_current_angle = abs(current_angle)
-
-            if abs_current_angle > 40:
-                abs_current_angle = 40
-            power_scale = (100 - abs_current_angle) / 100.0
-
-            if (current_angle / abs_current_angle) > 0:
-                self.set_motor_speed(1, -1 * speed)
-                self.set_motor_speed(2, speed * power_scale)
-            else:
-                self.set_motor_speed(1, -1 * speed * power_scale)
-                self.set_motor_speed(2, speed)
-        else:
-            self.set_motor_speed(1, -1 * speed)
-            self.set_motor_speed(2, speed)
-
-    def _forward(self, speed: float) -> None:
-        """
-        Drive forward.
-
-        :param speed: desired speed to drive forward at.
-        :type speed: float
-        """
-        current_angle = self.turn_angle
-
-        if current_angle != 0:
-            abs_current_angle = abs(current_angle)
-
-            if abs_current_angle > 40:
-                abs_current_angle = 40
-
-            power_scale = (100 - abs_current_angle) / 100.0
-
-            if (current_angle / abs_current_angle) > 0:
-                self.set_motor_speed(1, 1 * speed * power_scale)
-                self.set_motor_speed(2, -speed)
-            else:
-                self.set_motor_speed(1, speed)
-                self.set_motor_speed(2, -1 * speed * power_scale)
-        else:
-            self.set_motor_speed(1, speed)
-            self.set_motor_speed(2, -1 * speed)
+        self.left_motor.set_speed(speed)
+        self.right_motor.set_speed(speed)
 
     def drive(self, speed: float, angle: float) -> None:
         """
@@ -307,15 +219,41 @@ class Picarx:
         """
         self.set_turn_angle(angle)
 
-        if speed > 0:
-            self._forward(speed)
+        if angle != 0:
+            abs_angle = abs(angle)
+
+            if abs_angle > 40:
+                abs_angle = 40
+
+            power_scale = (100 - abs_angle) / 100.0
+
+            if speed > 0:
+                # Configure the motors for driving forward
+                if (angle / abs_angle) > 0:
+                    self.left_motor.set_speed(1 * speed * power_scale)
+                    self.right_motor.set_speed(-speed)
+                else:
+                    self.left_motor.set_speed(speed)
+                    self.right_motor.set_speed(-1 * speed * power_scale)
+            else:
+                # Configure the motors for driving backward
+                if (angle / abs_angle) > 0:
+                    self.left_motor.set_speed(-1 * speed)
+                    self.right_motor.set_speed(speed * power_scale)
+                else:
+                    self.left_motor.set_speed(-1 * speed * power_scale)
+                    self.right_motor.set_speed(speed)
         else:
-            self._backward(-speed)
+            if speed > 0:
+                self.left_motor.set_speed(speed)
+                self.right_motor.set_speed(-1 * speed)
+            else:
+                self.left_motor.set_speed(-1 * speed)
+                self.right_motor.set_speed(speed)
 
     def stop(self) -> None:
         """Stop the motors."""
-        self.set_motor_speed(1, 0)
-        self.set_motor_speed(2, 0)
+        self.set_power(0)
 
     def get_distance(self) -> float:
         """
