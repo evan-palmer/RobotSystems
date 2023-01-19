@@ -84,13 +84,13 @@ class Picarx:
             Pin(motor_pins[0]),
             PWM(motor_pins[2]),
             default_direction=self.default_motor_direction[0],
-            trim=0,
+            trim=25,
         )
         self.left_motor = Motor(
             Pin(motor_pins[1]),
             PWM(motor_pins[3]),
             default_direction=self.default_motor_direction[1],
-            trim=10,
+            trim=0,
         )
 
         self.turn_angle = 0.0
