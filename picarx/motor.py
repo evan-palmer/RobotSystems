@@ -1,12 +1,7 @@
 import atexit
-import time
 
 try:
     from robot_hat import PWM, Pin
-    from robot_hat.utils import reset_mcu
-
-    reset_mcu()
-    time.sleep(0.2)
 except (ImportError, ModuleNotFoundError):
     print(
         "This computer does not appear to be a PiCar -X system (robot_hat is not"
