@@ -71,12 +71,18 @@ class Picarx:
         self.pan_servo.angle(self.pan_servo_trim)
         self.tilt_servo.angle(self.tilt_servo_trim)
 
-        # Get the default motor directions
+        # Get the default motor configurations
         self.default_motor_direction = self.config_file.get(
             "picarx_dir_motor", default_value="[1,1]"
         )
+        self.default_motor_speed = self.config_file.get(
+            "picarx_motor_trim", default_value="[25,0]"
+        )
         self.default_motor_direction = [
             int(i.strip()) for i in self.default_motor_direction.strip("[]").split(",")
+        ]
+        self.default_motor_speed = [
+            int(i.strip()) for i in self.default_motor_speed.strip("[]").split(",")
         ]
 
         # Initialize the motors
@@ -84,13 +90,13 @@ class Picarx:
             Pin(motor_pins[0]),
             PWM(motor_pins[2]),
             default_direction=self.default_motor_direction[0],
-            trim=25,
+            trim=self.default_motor_speed[0],
         )
         self.left_motor = Motor(
             Pin(motor_pins[1]),
             PWM(motor_pins[3]),
             default_direction=self.default_motor_direction[1],
-            trim=0,
+            trim=self.default_motor_speed[1],
         )
 
         self.turn_angle = 0.0
@@ -132,6 +138,27 @@ class Picarx:
 
         self.config_file.set(
             "picarx_dir_motor", [self.right_motor.direction, self.left_motor.direction]
+        )
+
+    def save_motor_speed_calibration(self, motor: int, value: int) -> None:
+        """
+        Save the calibrated motor speed (trim).
+
+        :param motor: motor whose calibration should be saved
+        :type motor: int
+        :param value: motor speed trim
+        :type value: int
+        """
+        if motor not in [1, 2]:
+            raise ValueError("Invalid motor ID provided. Options are: 1, 2.")
+
+        if motor == 1:
+            self.right_motor.trim = value
+        else:
+            self.left_motor.trim = value
+
+        self.config_file.set(
+            "picarx_motor_trim", [self.right_motor.trim, self.left_motor.trim]
         )
 
     def save_steering_servo_calibration(self, value: int) -> None:
