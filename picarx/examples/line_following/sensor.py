@@ -30,6 +30,10 @@ class Sensor:
         self.channel_2 = ADC(pin_2)
         self.channel_3 = ADC(pin_3)
 
+        self.channel_1_trim = 0
+        self.channel_2_trim = 0
+        self.channel_3_trim = 0
+
     def read(self) -> list[int]:
         """
         Read the ADC values from the ground-facing photosensor.
@@ -37,4 +41,18 @@ class Sensor:
         :return: readings from the three ADC channels
         :rtype: list[int]
         """
-        return [self.channel_1.read(), self.channel_2.read(), self.channel_3.read()]
+        return [
+            a - b
+            for a, b in zip(
+                [self.channel_1.read(), self.channel_2.read(), self.channel_3.read()],
+                [self.channel_1_trim, self.channel_2_trim, self.channel_3_trim],
+            )
+        ]
+
+    def calibrate(self, calibration_t: float = 2.0) -> None:
+        """Configure the default values for each of the channels."""
+        (
+            self.channel_1_trim,
+            self.channel_2_trim,
+            self.channel_3_trim
+        ) = self.read()
