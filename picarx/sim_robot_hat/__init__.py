@@ -1,3 +1,4 @@
+from .adc import ADC
 from .filedb import fileDB
 from .grayscale import Grayscale_Module
 from .pin import Pin

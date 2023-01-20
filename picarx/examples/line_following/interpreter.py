@@ -1,22 +1,18 @@
 import numpy as np
 
 
-class Interpretation:
+class Interpreter:
     """Interface used to interpret sensor readings."""
-
-    FORWARD = 0
-    LEFT = 1
-    RIGHT = -1
 
     def __init__(self, sensitivity: int = 1000, polarity: int = 1000) -> None:
         self.sensitivity = sensitivity
         self.polarity = polarity
 
-    def detect_direction(self, readings: list[int], dark: bool = False) -> int:
+    def detect_direction(self, readings: list[int], dark: bool = False) -> float:
         gradients = np.gradient(readings)
         sign_matrix = np.sign(gradients)
 
-        if dark:
-            ...
-        else:
-            ...
+        print(f"Gradients: {gradients}")
+        print(f"Sign Matrix: {sign_matrix}")
+
+        return 0.0
