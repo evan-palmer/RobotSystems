@@ -51,8 +51,4 @@ class Sensor:
 
     def calibrate(self, calibration_t: float = 2.0) -> None:
         """Configure the default values for each of the channels."""
-        (
-            self.channel_1_trim,
-            self.channel_2_trim,
-            self.channel_3_trim
-        ) = self.read()
+        (self.channel_1_trim, self.channel_2_trim, self.channel_3_trim) = self.read()

@@ -11,10 +11,7 @@ class Interpreter:
         :param polarity: is the line dark (False) or light (True), defaults to True
         :type polarity: bool, optional
         """
-        self.sensitivity = self.clamp(sensitivity, 0, 1) * (1 if polarity else -1)
-
-    def clamp(self, value: int, min_value: int, max_value: int) -> int:
-        return max(min_value, (min(value, max_value)))
+        self.sensitivity = max(0, min(sensitivity, 1)) * (1 if polarity else -1)
 
     def detect_direction(self, readings: list[int], noise_thresh: int = 10) -> float:
         """
@@ -22,6 +19,9 @@ class Interpreter:
 
         :param readings: photosensor readings
         :type readings: list[int]
+        :param noise_thresh: maximum allowable difference between gradients before
+            attempting to correct the angle, defaults to 10
+        :type noise_thresh: int, optional
         :return: measured direction of the line (if one exists)
         :rtype: float
         """
