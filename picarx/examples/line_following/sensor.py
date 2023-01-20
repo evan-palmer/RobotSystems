@@ -15,7 +15,7 @@ except (ImportError, ModuleNotFoundError):
 class Sensor:
     """Interface used to read data from the on-board ground-scanning photosensors."""
 
-    def __init__(self, pin_1: str, pin_2: str, pin_3: str) -> None:
+    def __init__(self, pin_1: str = "A0", pin_2: str = "A1", pin_3: str = "A2") -> None:
         """
         Create a new interface for reading from the photosensor.
 

@@ -33,10 +33,11 @@ class Interpreter:
         if abs((left - middle) - (right - middle)) < noise_thresh:
             return 0
 
+        # Calculate the direction to turn
         if right - left > 0:
             direction = (middle - right) / (middle + right)
+            direction *= -1
         else:
             direction = (middle - left) / (middle + left)
-            direction *= -1
 
         return direction * self.sensitivity

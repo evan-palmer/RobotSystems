@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 
@@ -10,15 +11,28 @@ from sensor import Sensor
 from picarx_improved import Picarx
 
 
-def follow_line():
-    sensor = Sensor("A0", "A1", "A2")
-    sensor.calibrate()
+def follow_line(config: str, user: str, scale: float = 50.0):
+    sensor = Sensor()
     interpreter = Interpreter(polarity=True)
+    car = Picarx(config, user)
+    controller = Control(car, scale)
+
+    input("Press 'enter' to calibrate")
+    
+    # Calibrate the sensors
+    sensor.calibrate()
+
+    input("Press 'enter' to start line following")
 
     while True:
-        result = interpreter.detect_direction(sensor.read())
+        controller.control(interpreter.detect_direction(sensor.read()))
         time.sleep(0.1)
 
 
 if __name__ == "__main__":
-    follow_line()
+    # Disable security checks - this was written by the SunFounder folks
+    user = os.popen("echo ${SUDO_USER:-$LOGNAME}").readline().strip()  # nosec
+    home = os.popen(f"getent passwd {user} | cut -d: -f 6").readline().strip()  # nosec
+    config = f"{home}/.config/picar-x/picar-x.conf"
+
+    follow_line(config, user)
