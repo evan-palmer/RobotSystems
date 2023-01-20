@@ -13,11 +13,11 @@ from picarx_improved import Picarx
 def follow_line():
     sensor = Sensor("A0", "A1", "A2")
     sensor.calibrate()
-    interpreter = Interpreter(polarity=False)
+    interpreter = Interpreter(polarity=True)
 
     while True:
-        print(interpreter.detect_direction(sensor.read()))
-        time.sleep(0.2)
+        result = interpreter.detect_direction(sensor.read())
+        time.sleep(0.1)
 
 
 if __name__ == "__main__":

@@ -11,9 +11,12 @@ class Interpreter:
         :param polarity: is the line dark (False) or light (True), defaults to True
         :type polarity: bool, optional
         """
-        self.sensitivity = max(0, (min(sensitivity, 1))) * (-1 if polarity else 1)
+        self.sensitivity = self.clamp(sensitivity, 0, 1) * (1 if polarity else -1)
 
-    def detect_direction(self, readings: list[int]) -> float:
+    def clamp(self, value: int, min_value: int, max_value: int) -> int:
+        return max(min_value, (min(value, max_value)))
+
+    def detect_direction(self, readings: list[int], noise_thresh: int = 10) -> float:
         """
         Detect the direction of the line.
 
@@ -22,5 +25,18 @@ class Interpreter:
         :return: measured direction of the line (if one exists)
         :rtype: float
         """
+        # Add a bit of noise to prevent division by zero errors
+        readings = [x + 1 if x == 0 else x for x in readings]
         left, middle, right = readings
-        return (right - left) / middle * self.sensitivity
+
+        # Break early
+        if abs((left - middle) - (right - middle)) < noise_thresh:
+            return 0
+
+        if right - left > 0:
+            direction = (middle - right) / (middle + right)
+        else:
+            direction = (middle - left) / (middle + left)
+            direction *= -1
+
+        return direction * self.sensitivity

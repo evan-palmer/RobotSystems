@@ -42,7 +42,7 @@ class Sensor:
         :rtype: list[int]
         """
         return [
-            a - b
+            max(a - b, 0)
             for a, b in zip(
                 [self.channel_1.read(), self.channel_2.read(), self.channel_3.read()],
                 [self.channel_1_trim, self.channel_2_trim, self.channel_3_trim],
