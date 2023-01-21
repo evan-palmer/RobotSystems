@@ -16,11 +16,15 @@ class LaneDetector:
     WIDTH = 320
     HEIGHT = 240
 
-    def __init__(self) -> None:
-        pass
+    def __init__(
+        self, resolution: tuple[int, int] = (640, 480), framerate: int = 24
+    ) -> None:
+        self.resolution = resolution
+        self.framerate = framerate
 
     def _detect_edges(self, frame: cv2.Mat) -> Any:
-        """_summary_
+        """
+        dont want to do this.
 
         :param frame: _description_
         :type frame: cv2.Mat
@@ -38,7 +42,8 @@ class LaneDetector:
         return edges
 
     def detect_line_segments(self, cropped_edges: cv2.Mat) -> Any:
-        """_summary_
+        """
+        i am bored.
 
         :param cropped_edges: _description_
         :type cropped_edges: cv2.Mat
@@ -135,7 +140,7 @@ class LaneDetector:
 
         return [[x1, y1, x2, y2]]
 
-    def region_of_interest(canny):
+    def region_of_interest(self, canny):
         height, width = canny.shape
         mask = np.zeros_like(canny)
 
@@ -157,7 +162,7 @@ class LaneDetector:
         masked_image = cv2.bitwise_and(canny, mask)
         return masked_image
 
-    def compute_steering_angle(frame, lane_lines):
+    def compute_steering_angle(self, frame: cv2.Mat, lane_lines):
         if len(lane_lines) == 0:
             return -90
 
