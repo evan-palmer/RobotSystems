@@ -1,4 +1,5 @@
 import math
+import os
 import sys
 from typing import Any
 
@@ -19,16 +20,24 @@ class LaneDetector:
     def __init__(
         self, resolution: tuple[int, int] = (640, 480), framerate: int = 24
     ) -> None:
+        """
+        Create a new lane detection interface.
+
+        :param resolution: camera resolution, defaults to (640, 480)
+        :type resolution: tuple[int, int], optional
+        :param framerate: camera framerate, defaults to 24
+        :type framerate: int, optional
+        """
         self.resolution = resolution
         self.framerate = framerate
 
-    def _detect_edges(self, frame: cv2.Mat) -> Any:
+    def detect_edges(self, frame: cv2.Mat) -> Any:
         """
-        dont want to do this.
+        Detect the edges in the frame.
 
-        :param frame: _description_
+        :param frame: camera frame
         :type frame: cv2.Mat
-        :return: _description_
+        :return: image filtered to display only the edges
         :rtype: Any
         """
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -43,16 +52,17 @@ class LaneDetector:
 
     def detect_line_segments(self, cropped_edges: cv2.Mat) -> Any:
         """
-        i am bored.
+        Detect the line segments from an image filtered to display only the edges.
 
-        :param cropped_edges: _description_
+        :param cropped_edges: image processed by edge detection algorithm
         :type cropped_edges: cv2.Mat
-        :return: _description_
+        :return: line segments from the image
         :rtype: Any
         """
         rho = 1
         angle = np.pi / 180
         min_threshold = 10
+
         line_segments = cv2.HoughLinesP(
             cropped_edges,
             rho,
@@ -69,13 +79,13 @@ class LaneDetector:
         self, frame: cv2.Mat, line_segments: list[cv2.Mat] | None
     ) -> list[list[list[int]]]:
         """
-        pain.
+        Calculate the intercept between line segments.
 
-        :param frame: _description_
+        :param frame: camera frame
         :type frame: cv2.Mat
-        :param line_segments: _description_
+        :param line_segments: list of line segments
         :type line_segments: list[cv2.Mat] | None
-        :return: _description_
+        :return: identified lane lines
         :rtype: list[list[list[int]]]
         """
         lane_lines: list[list[list[int]]] = []
@@ -88,6 +98,7 @@ class LaneDetector:
         right_fit = []
 
         boundary = 1 / 3
+
         left_region_boundary = width * (1 - boundary)
         right_region_boundary = width * boundary
 
@@ -121,13 +132,16 @@ class LaneDetector:
 
     def make_points(self, frame: cv2.Mat, line: np.ndarray) -> list[list[int]]:
         """
-        pain.
+        Get a list of points representing the current line segment.
 
-        :param frame: _description_
+        This will be the start and end points of a line segment.
+
+        :param frame: camera frame; used to determine the position of the line in the
+            frame space.
         :type frame: cv2.Mat
-        :param line: _description_
+        :param line: line whose points should be obtained
         :type line: np.ndarray
-        :return: _description_
+        :return: start and end points for the line using the camera frame dimensions
         :rtype: list[list[int]]
         """
         height, width, _ = frame.shape
@@ -140,12 +154,19 @@ class LaneDetector:
 
         return [[x1, y1, x2, y2]]
 
-    def region_of_interest(self, canny):
+    def region_of_interest(self, canny: cv2.Mat) -> cv2.Mat:
+        """
+        Get a masked image representing the current region of interest.
+
+        :param canny: frame to mask
+        :type canny: cv2.Mat
+        :return: masked image
+        :rtype: cv2.Mat
+        """
         height, width = canny.shape
         mask = np.zeros_like(canny)
 
         # only focus bottom half of the screen
-
         polygon = np.array(
             [
                 [
@@ -160,40 +181,76 @@ class LaneDetector:
 
         cv2.fillPoly(mask, polygon, 255)
         masked_image = cv2.bitwise_and(canny, mask)
+
         return masked_image
 
-    def compute_steering_angle(self, frame: cv2.Mat, lane_lines):
+    def compute_steering_angle(
+        self, frame: cv2.Mat, lane_lines: list[list[list[int]]]
+    ) -> float:
+        """
+        Calculate the steering angle (degrees) from the frame and lane lines.
+
+        :param frame: current camera frame
+        :type frame: cv2.Mat
+        :param lane_lines: detected lane lines
+        :type lane_lines: list[list[list[int]]]
+        :return: calculated steering angle
+        :rtype: float
+        """
         if len(lane_lines) == 0:
             return -90
 
         height, width, _ = frame.shape
         if len(lane_lines) == 1:
             x1, _, x2, _ = lane_lines[0][0]
-            x_offset = x2 - x1
+            x_offset: float = x2 - x1
         else:
             _, _, left_x2, _ = lane_lines[0][0]
             _, _, right_x2, _ = lane_lines[1][0]
+
             camera_mid_offset_percent = 0.02
             mid = int(width / 2 * (1 + camera_mid_offset_percent))
             x_offset = (left_x2 + right_x2) / 2 - mid
 
         y_offset = int(height / 2)
 
-        angle_to_mid_radian = math.atan(
-            x_offset / y_offset
-        )  # angle (in radian) to center vertical line
+        # angle (in radian) to center vertical line
+        angle_to_mid_radian = math.atan(x_offset / y_offset)
+
+        # Convert to degrees
         angle_to_mid_deg = int(angle_to_mid_radian * 180.0 / math.pi)
         steering_angle = angle_to_mid_deg + 90
+
         return steering_angle
 
     def stabilize_steering_angle(
         self,
-        curr_steering_angle,
-        new_steering_angle,
-        num_of_lane_lines,
-        max_angle_deviation_two_lines=5,
-        max_angle_deviation_one_lane=1,
-    ):
+        curr_steering_angle: float,
+        new_steering_angle: int,
+        num_of_lane_lines: int,
+        max_angle_deviation_two_lines: int = 5,
+        max_angle_deviation_one_lane: int = 1,
+    ) -> float:
+        """
+        Stabilize the steering angle.
+
+        This essentially clamps the steering angle to prevent sharp turns.
+
+        :param curr_steering_angle: current steering angle
+        :type curr_steering_angle: float
+        :param new_steering_angle: new steering angle to drive at
+        :type new_steering_angle: int
+        :param num_of_lane_lines: number of line lanes
+        :type num_of_lane_lines: int
+        :param max_angle_deviation_two_lines: maximum deviation between the two angles,
+            defaults to 5
+        :type max_angle_deviation_two_lines: int, optional
+        :param max_angle_deviation_one_lane: maximum angle deviation in a lane,
+            defaults to 1
+        :type max_angle_deviation_one_lane: int, optional
+        :return: stabilized steering angle
+        :rtype: float
+        """
         if num_of_lane_lines == 2:
             # if both lane lines detected, then we can deviate more
             max_angle_deviation = max_angle_deviation_two_lines
@@ -214,4 +271,21 @@ class LaneDetector:
 
 
 def lane_following(config: str, user: str) -> None:
+    """
+    Loop used to follow lanes detected by the RGB camera.
+
+    :param config: car configuration file path
+    :type config: str
+    :param user: configuration file user
+    :type user: str
+    """
     ...
+
+
+if __name__ == "__main__":
+    # Disable security checks - this was written by the SunFounder folks
+    user = os.popen("echo ${SUDO_USER:-$LOGNAME}").readline().strip()  # nosec
+    home = os.popen(f"getent passwd {user} | cut -d: -f 6").readline().strip()  # nosec
+    config = f"{home}/.config/picar-x/picar-x.conf"
+
+    lane_following(config, user)
