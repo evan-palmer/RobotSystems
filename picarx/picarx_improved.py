@@ -1,6 +1,8 @@
 import time
 from typing import Any
 
+import numpy as np
+
 try:
     from robot_hat import PWM, Grayscale_Module, Pin, Servo, Ultrasonic, fileDB
     from robot_hat.utils import reset_mcu
@@ -232,6 +234,23 @@ class Picarx:
         self.right_motor.set_speed(speed)
         self.left_motor.set_speed(speed)
 
+    def calculate_speed(self, angle: float) -> float:
+        """
+        Calculate the wheel speed given the desired steering angle.
+
+        :param angle: desired steering angle
+        :type angle: float
+        :return: target wheel speed
+        :rtype: float
+        """
+        length = 11.8
+        height = 9.5
+
+        icr = np.tan(90 - abs(angle)) * height + length / 2
+        scale = (icr - length / 2) / icr
+
+        return abs(scale)
+
     def drive(self, speed: float, angle: float) -> None:
         """
         Drive the robot in a desired speed and direction.
@@ -251,7 +270,7 @@ class Picarx:
             if abs_angle > 40:
                 abs_angle = 40
 
-            power_scale = (100 - abs_angle) / 100.0
+            power_scale = self.calculate_speed(abs_angle)
 
             if speed > 0:
                 if (angle / abs_angle) > 0:
