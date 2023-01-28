@@ -5,6 +5,8 @@ from typing import Any
 
 import cv2
 import numpy as np
+from picamera import PiCamera
+from picamera.array import PiRGBArray
 
 sys.path.append("..")
 
@@ -14,22 +16,9 @@ from picarx_improved import Picarx  # noqa
 class LaneDetector:
     """Interface used to detect lanes on a Picarx."""
 
-    WIDTH = 320
-    HEIGHT = 240
-
-    def __init__(
-        self, resolution: tuple[int, int] = (640, 480), framerate: int = 24
-    ) -> None:
-        """
-        Create a new lane detection interface.
-
-        :param resolution: camera resolution, defaults to (640, 480)
-        :type resolution: tuple[int, int], optional
-        :param framerate: camera framerate, defaults to 24
-        :type framerate: int, optional
-        """
-        self.resolution = resolution
-        self.framerate = framerate
+    def __init__(self) -> None:
+        """Create a new lane detection interface."""
+        ...
 
     def detect_edges(self, frame: cv2.Mat) -> Any:
         """
@@ -270,7 +259,12 @@ class LaneDetector:
         return stabilized_steering_angle
 
 
-def lane_following(config: str, user: str) -> None:
+def lane_following(
+    config: str,
+    user: str,
+    resolution: tuple[int, int] = (640, 480),
+    framerate: int = 24,
+) -> None:
     """
     Loop used to follow lanes detected by the RGB camera.
 
@@ -278,12 +272,47 @@ def lane_following(config: str, user: str) -> None:
     :type config: str
     :param user: configuration file user
     :type user: str
+    :param resolution: camera resolution, defaults to (640, 480)
+    :type resolution: tuple[int, int], optional
+    :param framerate: camera framerate, defaults to 24
+    :type framerate: int, optional
     """
-    ...
+    detector = LaneDetector()
+    car = Picarx(config, user)
+
+    camera = PiCamera()
+
+    camera.resolution = resolution
+    camera.framerate = framerate
+
+    raw = PiRGBArray(camera, size=resolution)
+
+    # Continuously capture camera frames from the feed and process them for lane
+    # following
+    for frame in camera.capture_continuous(raw, format="bgr", use_video_port=True):
+        frame = frame.array
+
+        edges = detector.detect_edges(frame)
+        roi = detector.region_of_interest(edges)
+        segments = detector.detect_line_segments(roi)
+        lane_lines = detector.average_slope_intercept(frame, segments)
+
+        angle = detector.compute_steering_angle(frame, lane_lines)
+
+        car.drive(0.3, angle - 90)
+
+        # Exit if the `esc` key is pressed
+        key = cv2.waitKey(1) & 0xFF
+
+        if key == 27:
+            cv2.destroyAllWindows()
+            camera.close()
+            car.stop()
+
+            break
 
 
 if __name__ == "__main__":
-    # Disable security checks - this was written by the SunFounder folks
     user = os.popen("echo ${SUDO_USER:-$LOGNAME}").readline().strip()  # nosec
     home = os.popen(f"getent passwd {user} | cut -d: -f 6").readline().strip()  # nosec
     config = f"{home}/.config/picar-x/picar-x.conf"
