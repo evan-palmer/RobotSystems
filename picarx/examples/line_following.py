@@ -57,7 +57,7 @@ class Sensor:
         pin_1: str = "A0",
         pin_2: str = "A1",
         pin_3: str = "A2",
-        delay: float = 0.1,
+        delay: float = 0.05,
     ) -> None:
         """
         Create a new interface for reading from the photosensor.
@@ -145,7 +145,7 @@ class Interpreter:
         control_bus: Bus,
         sensitivity: float = 0.5,
         polarity: bool = True,
-        delay: float = 0.1,
+        delay: float = 0.05,
     ) -> None:
         """
         Create a new interpreter to evaluate sensor readings.
@@ -235,7 +235,7 @@ class Control:
     """Control interface used to drive the robot in a desired speed and direction."""
 
     def __init__(
-        self, bus: Bus, car: Picarx, scale: float = 100.0, delay: float = 0.1
+        self, bus: Bus, car: Picarx, scale: float = 100.0, delay: float = 0.05
     ) -> None:
         """
         Create a new control interface.
@@ -326,6 +326,9 @@ def follow_line(config: str, user: str, scale: float = 50.0):
     sensor.start()
     interpreter.start()
     controller.start()
+
+    while True:
+        ...
 
 
 if __name__ == "__main__":
