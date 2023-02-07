@@ -10,7 +10,8 @@ RUN pip3 install \
     pandas \
     numpy \
     opencv-python \
-    PyYAML
+    readerwriterlock \
+    logdecorator
 
 
 FROM base as development
