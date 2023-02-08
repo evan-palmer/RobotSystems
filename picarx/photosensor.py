@@ -1,12 +1,8 @@
 import atexit
-import sys
 import time
 
-sys.path.append("..")
-
-from bus import Bus  # noqa
-
-from picarx_improved import Picarx  # noqa
+from bus import Bus
+from picarx_improved import Picarx
 
 try:
     from robot_hat import ADC
@@ -182,7 +178,7 @@ class Control:
         self.running = False
         atexit.register(self.shutdown)
 
-    def control(self, angle: float, speed: int = 50) -> None:
+    def control(self, angle: float) -> None:
         """
         Drive the robot at a desired speed and angle.
 
@@ -191,7 +187,7 @@ class Control:
         :param speed: speed to drive at, defaults to 50
         :type speed: int, optional
         """
-        self.car.drive(speed, angle * self.scale)
+        self.car.set_turn_angle(angle * self.scale)
 
     def consume(self, bus: Bus, delay: float = 0.05) -> None:
         """

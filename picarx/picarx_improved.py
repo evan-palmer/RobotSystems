@@ -251,7 +251,7 @@ class Picarx:
 
         return abs(scale)
 
-    def drive(self, speed: float, angle: float) -> None:
+    def drive(self, speed: float, angle: float | None = None) -> None:
         """
         Drive the robot in a desired speed and direction.
 
@@ -262,7 +262,10 @@ class Picarx:
         :param angle: desired angle
         :type angle: float
         """
-        self.set_turn_angle(angle)
+        if angle is None:
+            angle = self.turn_angle
+        else:
+            self.set_turn_angle(angle)
 
         if angle != 0:
             abs_angle = abs(angle)
