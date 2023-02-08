@@ -43,13 +43,13 @@ def follow_line(config: str, user: str, scale: float = 50.0):
     gs_controller = photosensor.Control(car, scale)
 
     us_sensor = ultrasonic.Sensor(car)
-    us_interpreter = ultrasonic.Interpreter(10)
+    us_interpreter = ultrasonic.Interpreter(30)
     us_controller = ultrasonic.Control(car, 50)
 
     gs_prod = Producer(
         gs_sensor.read,
         gs_sensor_bus,
-        termination_bus=termination_bus,
+        termination_buses=termination_bus,
         name="Greyscale Sensor",
         delay=0.05,
     )
@@ -58,7 +58,7 @@ def follow_line(config: str, user: str, scale: float = 50.0):
         gs_interpreter.detect_direction,
         gs_sensor_bus,
         gs_control_bus,
-        termination_bus=termination_bus,
+        termination_buses=termination_bus,
         name="Greyscale Interpreter",
         delay=0.05,
     )
@@ -66,7 +66,7 @@ def follow_line(config: str, user: str, scale: float = 50.0):
     gs_cons = Consumer(
         gs_controller.control,
         gs_control_bus,
-        termination_bus=termination_bus,
+        termination_buses=termination_bus,
         name="Greyscale Controller",
         delay=0.05,
     )
@@ -74,7 +74,7 @@ def follow_line(config: str, user: str, scale: float = 50.0):
     us_prod = Producer(
         us_sensor.read,
         us_sensor_bus,
-        termination_bus=termination_bus,
+        termination_buses=termination_bus,
         name="Ultrasonic Sensor",
         delay=0.05,
     )
@@ -83,7 +83,7 @@ def follow_line(config: str, user: str, scale: float = 50.0):
         us_interpreter.calculate_speed,
         us_sensor_bus,
         us_control_bus,
-        termination_bus=termination_bus,
+        termination_buses=termination_bus,
         name="Ultrasonic Interpreter",
         delay=0.05,
     )
@@ -91,17 +91,17 @@ def follow_line(config: str, user: str, scale: float = 50.0):
     us_cons = Consumer(
         us_controller.control,
         us_control_bus,
-        termination_bus=termination_bus,
+        termination_buses=termination_bus,
         name="Ultrasonic Controller",
         delay=0.05,
     )
 
     timer = Timer(
         termination_bus,
-        termination_bus=termination_bus,
+        termination_buses=termination_bus,
         delay=0.05,
         name="Timer",
-        duration=5,
+        duration=10,
     )
 
     input("Press 'enter' to calibrate the sensor")
