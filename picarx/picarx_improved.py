@@ -1,5 +1,5 @@
 import time
-from typing import Any
+from typing import Any, Union
 
 import numpy as np
 
@@ -251,7 +251,7 @@ class Picarx:
 
         return abs(scale)
 
-    def drive(self, speed: float, angle: float | None = None) -> None:
+    def drive(self, speed: float, angle: Union[float, None] = None) -> None:
         """
         Drive the robot in a desired speed and direction.
 
