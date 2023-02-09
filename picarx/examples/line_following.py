@@ -6,7 +6,6 @@ sys.path.append("..")
 
 from bus import Bus  # noqa
 from photosensor import Control, Interpreter, Sensor  # noqa
-
 from picarx_improved import Picarx  # noqa
 
 
@@ -25,10 +24,11 @@ def follow_line(config: str, user: str, scale: float = 50.0):
     sensor_bus = Bus()
     control_bus = Bus()
 
-    # Construct our fun new tools
+    car = Picarx(config, user)
+
+    # Instantiate the greyscale sensor stuff
     sensor = Sensor()
     interpreter = Interpreter(polarity=True)
-    car = Picarx(config, user)
     controller = Control(car, scale)
 
     input("Press 'enter' to calibrate the sensor")
@@ -37,18 +37,18 @@ def follow_line(config: str, user: str, scale: float = 50.0):
 
     input("Press 'enter' to start line following")
 
-    tp = ThreadPoolExecutor(max_workers=3)
+    with ThreadPoolExecutor(max_workers=3) as tp:
+        # The futures don't return anything useful here so don't catch them
+        tp.submit(sensor.produce, sensor_bus)
+        tp.submit(interpreter.produce_consume, sensor_bus, control_bus)
+        tp.submit(controller.consume, control_bus)
 
-    tp.submit(sensor.produce, sensor_bus)
-    tp.submit(interpreter.produce_consume, sensor_bus, control_bus)
-    tp.submit(controller.consume, control_bus)
+        input("Press 'enter' to quit")
 
-    input("Press 'enter' to quit")
-
-    sensor.shutdown()
-    interpreter.shutdown()
-    controller.shutdown()
-    tp.shutdown()
+        # Make sure that our threads can join gracefully
+        sensor.shutdown()
+        interpreter.shutdown()
+        controller.shutdown()
 
 
 if __name__ == "__main__":
