@@ -187,6 +187,10 @@ class Control:
         :param speed: speed to drive at, defaults to 50
         :type speed: int, optional
         """
+        # Use this for the script that doesn't use the ultrasonic sensor (Week 4)
+        # self.car.drive(50, angle * self.scale)
+
+        # Use this for the script that uses the ultrasonic sensor (Week 5)
         self.car.set_turn_angle(angle * self.scale)
 
     def consume(self, bus: Bus, delay: float = 0.05) -> None:
